@@ -6,7 +6,7 @@ const app = require('../app');
 
 let server;
 const socketUrl = 'http://localhost:3030';
-const dbUrl = 'mongodb://localhost:27017/e2e_test_db';
+const dbUrl = 'mongodb://localhost:27017/e2e_test_db2';
 
 test.before(async () => {
     await mongoose.connect(dbUrl, {

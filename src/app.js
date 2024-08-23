@@ -27,7 +27,7 @@ const app = () => {
     const server = http.createServer(app);
     const socket = new Server(server);
 
-    mongoose.connect( process.env.MONGO_URL, {
+    mongoose.connect(process.env.MONGO_URL, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     }).then(() => {
@@ -123,6 +123,39 @@ const app = () => {
 
     server.listen(port, () => {
         console.log('Server is running on port:', port);
+    });
+
+    const gracefulShutdown = () => {
+        console.log('Received shutdown signal, shutting down gracefully...');
+        server.close(async () => {
+            console.log('Closed out remaining connections');
+            await mongoose.connection.close(false, () => {
+                console.log('MongoDB connection closed');
+                process.exit(0);
+            });
+        });
+
+        socket.close(() => {
+            console.log('Socket.IO server closed');
+        });
+
+        setTimeout(() => {
+            console.error('Forcing shutdown');
+            process.exit(1);
+        }, 10000);
+    };
+
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
+
+    process.on('uncaughtException', (err) => {
+        console.error('Uncaught Exception:', err);
+        gracefulShutdown();
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+        gracefulShutdown();
     });
 
     return server;
