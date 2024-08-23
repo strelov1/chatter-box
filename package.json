@@ -1,0 +1,23 @@
+{
+  "name": "chatter-box",
+  "version": "0.0.1",
+  "description": "Online chat",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "chat"
+  ],
+  "author": "strelov1@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "http": "^0.0.1-security",
+    "mongoose": "^8.5.3",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.7.5"
+  }
+}
