@@ -14,6 +14,7 @@ test.before(async () => {
         useUnifiedTopology: true,
     });
     process.env.MONGO_URL = dbUrl;
+    process.env.PORT = "3031"
 
     server = app();
 });
@@ -34,7 +35,7 @@ test('Create group', async () => {
         client.on('connect', resolve);
     });
 
-    client.emit('authenticate', userId1);
+    client.emit('authenticate', { userId: userId1 });
 
     await client.emit('group:create', {
         name: 'Test Group',
@@ -63,7 +64,7 @@ test('Join new member', async () => {
         client.on('connect', resolve);
     });
 
-    client.emit('authenticate', userId1);
+    client.emit('authenticate', { userId: userId1 });
 
     await client.emit('group:create', {
         name: 'Test Group',

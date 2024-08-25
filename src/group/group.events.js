@@ -1,18 +1,10 @@
 const groupEvents = (socket, container) => {
-    /** @type {GroupService} */
-    const groupService = container.get('GroupService');
+    /** @type {GroupController} */
+    const groupController = container.get('GroupController');
 
-    socket.on('group:create', async (data) => {
-        await groupService.create(data);
-    });
-
-    socket.on('group:join', async (data) => {
-        await groupService.join(data);
-    });
-
-    socket.on('group:delete', async (data) => {
-        await groupService.delete(data);
-    });
+    socket.on('group:create', (data) => groupController.createGroup(socket, data));
+    socket.on('group:join', (data) => groupController.joinGroup(socket, data));
+    socket.on('group:delete', (data) => groupController.deleteGroup(socket, data));
 };
 
 module.exports.groupEvents = groupEvents;

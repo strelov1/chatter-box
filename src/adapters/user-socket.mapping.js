@@ -12,7 +12,6 @@ class UserSocketMapping {
     getSocketId(userId) {
         return this.userToSocket.get(userId);
     }
-
     getUserId(socketId) {
         return this.socketToUser.get(socketId);
     }

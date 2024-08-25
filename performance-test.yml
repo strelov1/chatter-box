@@ -1,0 +1,61 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 5
+      arrivalRate: 50
+      name: "Warm-up"
+    - duration: 30
+      arrivalRate: 100
+      name: "Sustained load"
+    - duration: 10
+      arrivalRate: 50
+      name: "Cool-down"
+  protocols:
+    socketio:
+      transport: "websocket"
+      path: "/socket.io"
+
+scenarios:
+  - engine: "socketio"
+    flow:
+      - post:
+          url: "/api/login"
+          json:
+            username: "{{ $randomString(10) }}"
+            password: "password123"
+          capture:
+            - json: "$.authKey"
+              as: "authKey1"
+      - post:
+          url: "/api/login"
+          json:
+            username: "{{ $randomString(10) }}"
+            password: "password123"
+          capture:
+            - json: "$.authKey"
+              as: "authKey2"
+      - emit:
+          channel: "authenticate"
+          data:
+            userId: "{{ authKey1 }}"
+          on: "authenticated"
+      - emit:
+          channel: "authenticate"
+          data:
+            userId: "{{ authKey2 }}"
+      - emit:
+          channel: "group:create"
+          data:
+            name: "Test Group {{ $randomNumber(1, 1000) }}"
+            members: ["{{ authKey1 }}", "{{ authKey2 }}"]
+        response:
+          on: "group:created"
+          capture:
+            json: "$[0]"
+            as: "createdGroup"
+      # - log: "createdGroup: {{ createdGroup }}"
+      - emit:
+          channel: "message:create"
+          data:
+            groupId: "{{ createdGroup._id }}"
+            text: "Hello World!"

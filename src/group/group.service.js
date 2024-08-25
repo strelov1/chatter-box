@@ -13,7 +13,6 @@ class GroupService {
         try {
             const group = await this.groupRepository.create(name, members);
             const groupId = String(group._id);
-
             for (const userId of members) {
                 this.transport.join(groupId, userId);
             }

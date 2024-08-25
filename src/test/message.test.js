@@ -39,8 +39,8 @@ test('Create group and send message', async () => {
         client2.on('connect', resolve);
     });
 
-    client1.emit('authenticate', userId1);
-    client2.emit('authenticate', userId2);
+    client1.emit('authenticate', { userId: userId1 });
+    client2.emit('authenticate', { userId: userId2 });
 
     await client1.emit('group:create', {
         name: 'Test Group',

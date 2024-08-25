@@ -1,10 +1,8 @@
 const messageEvents = (socket, container) => {
-    /** @type {MessageService} */
-    const messageService = container.get('MessageService');
+    /** @type {MessageController} */
+    const messageController = container.get('MessageController');
 
-    socket.on('message:create', async (data) => {
-        await messageService.create(data);
-    });
+    socket.on('message:create', (data) => messageController.create(socket, data));
 };
 
 module.exports.messageEvents = messageEvents;

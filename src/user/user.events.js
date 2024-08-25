@@ -1,19 +1,8 @@
 const userEvents = (socket, container) => {
-    /** @type {UserService} */
-    const userService = container.get('UserService');
+    /** @type {UserController} */
+    const userController = container.get('UserController');
 
-    socket.on('user:init', async (userId) => {
-        try {
-            const userGroups = userService.getAllGroups(userId);
-
-            userGroups.forEach(groupId => {
-                socket.join(groupId);
-                console.log(`User ${userId} (socket ${socket.id}) joined group ${groupId}`);
-            });
-        } catch (error) {
-            console.error('Authentication failed:', error);
-        }
-    });
+    socket.on('user:init', (data) => userController.init(socket, data));
 };
 
 module.exports.userEvents = userEvents;

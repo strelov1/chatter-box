@@ -3,7 +3,7 @@ class IoCContainer {
         this.services = {};
     }
 
-    register(name, definition, dependencies) {
+    register(name, definition, dependencies = []) {
         this.services[name] = { definition, dependencies, instance: null };
         return this;
     }
@@ -17,7 +17,9 @@ class IoCContainer {
 
         if (!service.instance) {
             const args = service.dependencies.map(dep => this.get(dep));
-            service.instance = service.definition(...args);
+            service.instance = typeof service.definition === 'function' && service.definition.prototype
+                ? new service.definition(...args)
+                : service.definition(...args);
         }
 
         return service.instance;

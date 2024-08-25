@@ -9,16 +9,20 @@ const { UserSocketMapping } = require("./adapters/user-socket.mapping");
 
 const { GroupService } = require('./group/group.service');
 const { GroupRepository } = require('./group/group.repository');
+const { GroupController } = require("./group/group.controller");
 
+const { MessageController } = require('./message/message.controller');
 const { MessageService } = require('./message/message.service');
 const { MessageRepository } = require('./message/message.repository');
 
+const { UserController } = require('./user/user.controller');
 const { UserService } = require('./user/user.service');
 const { UserRepository } = require('./user/user.repository');
 
 const { groupEvents } = require("./group/group.events");
 const { messageEvents } = require("./message/message.events");
 const { userEvents } = require("./user/user.events");
+const {userRouter} = require("./user/user.router");
 
 const app = () => {
     const container = new IoCContainer();
@@ -38,59 +42,91 @@ const app = () => {
 
     container.register(
         'UserSocketMapping',
-        () => new UserSocketMapping(),
-        []
-    ).register(
+        UserSocketMapping
+    );
+
+    container.register(
         'Transport',
         (userSocketMapping) => new SocketIoTransport(
             socket,
             userSocketMapping
         ),
         ['UserSocketMapping']
-    ).register(
+    );
+
+    container.register(
         'UserRepository',
-        () => new UserRepository(),
-        []
-    ).register(
+        UserRepository
+    );
+
+    container.register(
         'GroupRepository',
-        () => new GroupRepository(),
-        []
-    ).register(
+        GroupRepository
+    );
+
+    container.register(
         'MessageRepository',
-        () => new MessageRepository(),
-        []
-    ).register(
+        MessageRepository
+    );
+
+    container.register(
         'GroupService',
-        (groupRepository, transport) => new GroupService(
-            groupRepository,
-            transport
-        ),
+        GroupService,
         [
             'GroupRepository',
             'Transport'
         ]
-    ).register(
+    );
+
+    container.register(
         'MessageService',
-        (messageRepository, transport) => new MessageService(
-            messageRepository,
-            transport
-        ),
+        MessageService,
         [
             'MessageRepository',
             'Transport'
         ]
-    ).register(
+    );
+
+    container.register(
         'UserService',
-        (userRepository, transport) => new UserService(
-            userRepository,
-            transport
-        ),
+        UserService,
         [
             'UserRepository',
             'Transport'
         ]
     );
 
+    container.register(
+        'GroupController',
+        GroupController,
+        [
+            'GroupService',
+        ]
+    );
+
+    container.register(
+        'MessageController',
+        MessageController,
+        [
+            'MessageService',
+        ]
+    );
+
+    container.register(
+        'MessageController',
+        MessageController,
+        [
+            'MessageService',
+        ]
+    )
+
+    container.register(
+        'UserController',
+        UserController,
+        [
+            'UserService',
+        ]
+    );
 
     socket.on('connection', (clientSocket) => {
         console.log('Client connected:', clientSocket.id);
@@ -105,9 +141,9 @@ const app = () => {
 
         const userSocketMapping = container.get('UserSocketMapping');
 
-        clientSocket.on('authenticate', (userId) => {
-            userSocketMapping.add(userId, clientSocket.id);
-            console.log(`User ${userId} is now associated with socket ${clientSocket.id}`);
+        clientSocket.on('authenticate', (data) => {
+            userSocketMapping.add(data.userId, clientSocket.id);
+            console.log(`User ${data.userId} is now associated with socket ${clientSocket.id}`);
         });
 
         clientSocket.on('disconnect', () => {
@@ -116,8 +152,11 @@ const app = () => {
         });
     });
 
-
     app.use(express.json());
+    app.use('/api', userRouter(
+        express.Router(),
+        container
+    ));
 
     const port = process.env.PORT || 3000;
 
@@ -129,20 +168,15 @@ const app = () => {
         console.log('Received shutdown signal, shutting down gracefully...');
         server.close(async () => {
             console.log('Closed out remaining connections');
-            await mongoose.connection.close(false, () => {
-                console.log('MongoDB connection closed');
-                process.exit(0);
-            });
+            await mongoose.connection.close(false);
         });
 
-        socket.close(() => {
-            console.log('Socket.IO server closed');
-        });
+        socket.close();
 
         setTimeout(() => {
             console.error('Forcing shutdown');
             process.exit(1);
-        }, 10000);
+        }, 1000);
     };
 
     process.on('SIGTERM', gracefulShutdown);
@@ -150,12 +184,12 @@ const app = () => {
 
     process.on('uncaughtException', (err) => {
         console.error('Uncaught Exception:', err);
-        gracefulShutdown();
+        // gracefulShutdown();
     });
 
     process.on('unhandledRejection', (reason, promise) => {
         console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-        gracefulShutdown();
+        // gracefulShutdown();
     });
 
     return server;
