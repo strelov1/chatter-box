@@ -2,9 +2,11 @@ class MessageService {
     constructor(
         messageRepository,
         transport,
+        logger,
     ) {
         this.messageRepository = messageRepository;
         this.transport = transport;
+        this.logger = logger;
     }
 
     async create({ groupId, text }) {
@@ -12,7 +14,7 @@ class MessageService {
             const message = await this.messageRepository.create(groupId, text);
             this.transport.sendToGroup(groupId, 'message:created', message);
         } catch (error) {
-            console.log('message:created:error', error);
+            this.logger.error('message:created:error', error);
         }
     }
 }

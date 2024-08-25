@@ -2,11 +2,13 @@ class GroupService {
     constructor(
         groupRepository,
         transport,
+        logger,
     ) {
         /** @type {GroupRepository} */
         this.groupRepository = groupRepository;
         /** @type {SocketIoTransport} */
         this.transport = transport;
+        this.logger = logger
     }
 
     async create({name, members}) {
@@ -18,7 +20,7 @@ class GroupService {
             }
             this.transport.sendToGroup(groupId, 'group:created', group);
         } catch (error) {
-            console.log('group:created:error', error);
+            this.logger.error('group:created:error', error);
         }
     }
 

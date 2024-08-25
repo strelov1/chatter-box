@@ -1,9 +1,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const http = require('http');
+const pino = require('pino');
+const pretty = require('pino-pretty');
 const { Server } = require('socket.io');
 
 const { IoCContainer } = require('./utils/ioc-container');
+const { Logger } = require('./utils/logger');
 const { SocketIoTransport } = require('./adapters/socket-io.transport');
 const { UserSocketMapping } = require("./adapters/user-socket.mapping");
 
@@ -22,7 +25,7 @@ const { UserRepository } = require('./user/user.repository');
 const { groupEvents } = require("./group/group.events");
 const { messageEvents } = require("./message/message.events");
 const { userEvents } = require("./user/user.events");
-const {userRouter} = require("./user/user.router");
+const { userRouter } = require("./user/user.router");
 
 const app = () => {
     const container = new IoCContainer();
@@ -31,14 +34,27 @@ const app = () => {
     const server = http.createServer(app);
     const socket = new Server(server);
 
+    const logger = pino({
+        level: 'info'
+    }, pretty({
+        colorize: true,
+        translateTime: true,
+        ignore: 'pid,hostname'
+    }));
+
     mongoose.connect(process.env.MONGO_URL, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     }).then(() => {
-        console.log('Connected to MongoDB');
+        logger.info('Connected to MongoDB');
     }).catch(err => {
-        console.error('Failed to connect to MongoDB', err);
+        logger.error('Failed to connect to MongoDB', err);
     });
+
+    container.register(
+        'Logger',
+        () => new Logger(logger),
+    );
 
     container.register(
         'UserSocketMapping',
@@ -47,11 +63,15 @@ const app = () => {
 
     container.register(
         'Transport',
-        (userSocketMapping) => new SocketIoTransport(
+        (userSocketMapping, logger) => new SocketIoTransport(
             socket,
-            userSocketMapping
+            userSocketMapping,
+            logger
         ),
-        ['UserSocketMapping']
+        [
+            'UserSocketMapping',
+            'Logger'
+        ]
     );
 
     container.register(
@@ -74,7 +94,8 @@ const app = () => {
         GroupService,
         [
             'GroupRepository',
-            'Transport'
+            'Transport',
+            'Logger'
         ]
     );
 
@@ -83,7 +104,8 @@ const app = () => {
         MessageService,
         [
             'MessageRepository',
-            'Transport'
+            'Transport',
+            'Logger',
         ]
     );
 
@@ -125,11 +147,12 @@ const app = () => {
         UserController,
         [
             'UserService',
+            'Logger',
         ]
     );
 
     socket.on('connection', (clientSocket) => {
-        console.log('Client connected:', clientSocket.id);
+        logger.info('Client connected:', clientSocket.id);
 
         // Register handlers
         [
@@ -143,12 +166,12 @@ const app = () => {
 
         clientSocket.on('authenticate', (data) => {
             userSocketMapping.add(data.userId, clientSocket.id);
-            console.log(`User ${data.userId} is now associated with socket ${clientSocket.id}`);
+            logger.info(`User ${data.userId} is now associated with socket ${clientSocket.id}`);
         });
 
         clientSocket.on('disconnect', () => {
             userSocketMapping.removeBySocketId(clientSocket.id);
-            console.log(`Socket ${clientSocket.id} disconnected and removed from mapping`);
+            logger.info(`Socket ${clientSocket.id} disconnected and removed from mapping`);
         });
     });
 
@@ -161,20 +184,19 @@ const app = () => {
     const port = process.env.PORT || 3000;
 
     server.listen(port, () => {
-        console.log('Server is running on port:', port);
+        logger.info('Server is running on port:', port);
     });
 
     const gracefulShutdown = () => {
-        console.log('Received shutdown signal, shutting down gracefully...');
+        logger.info('Received shutdown signal, shutting down gracefully...');
         server.close(async () => {
-            console.log('Closed out remaining connections');
+            logger.info('Closed out remaining connections');
+            socket.close();
             await mongoose.connection.close(false);
         });
 
-        socket.close();
-
         setTimeout(() => {
-            console.error('Forcing shutdown');
+            logger.error('Forcing shutdown');
             process.exit(1);
         }, 1000);
     };
@@ -183,13 +205,13 @@ const app = () => {
     process.on('SIGINT', gracefulShutdown);
 
     process.on('uncaughtException', (err) => {
-        console.error('Uncaught Exception:', err);
-        // gracefulShutdown();
+        logger.error('Uncaught Exception:', err);
+        gracefulShutdown();
     });
 
     process.on('unhandledRejection', (reason, promise) => {
-        console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-        // gracefulShutdown();
+        logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+        gracefulShutdown();
     });
 
     return server;

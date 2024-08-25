@@ -1,8 +1,9 @@
 class SocketIoTransport {
-    constructor(socket, userSocketMapping) {
+    constructor(socket, userSocketMapping, logger) {
         this.socket = socket;
         /** @type {UserSocketMapping} */
         this.userSocketMapping = userSocketMapping;
+        this.logger = logger;
     }
     sendToGroup(groupId, event, message) {
         this.socket.in(groupId).emit(event, message);
@@ -16,14 +17,14 @@ class SocketIoTransport {
     join(groupId, userId) {
         const socketId = this.userSocketMapping.getSocketId(userId);
         if (!socketId) {
-            console.error(`Socket for user ${userId} not found`);
+            this.logger.error(`Socket for user ${userId} not found`);
             return;
         }
         const socket = this.socket.sockets.sockets.get(socketId);
         if (socket) {
             socket.join(groupId);
         } else {
-            console.error(`Socket ${socketId} not found`);
+            this.logger.error(`Socket ${socketId} not found`);
         }
     }
 }

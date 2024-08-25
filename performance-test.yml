@@ -2,18 +2,25 @@ config:
   target: "http://localhost:3000"
   phases:
     - duration: 5
-      arrivalRate: 50
+      arrivalRate: 10
       name: "Warm-up"
+
     - duration: 30
-      arrivalRate: 100
+      arrivalRate: 10
       name: "Sustained load"
+
     - duration: 10
-      arrivalRate: 50
+      arrivalRate: 10
       name: "Cool-down"
+  plugins:
+    ensure: {}
   protocols:
     socketio:
       transport: "websocket"
       path: "/socket.io"
+  ensure:
+    thresholds:
+      - 'socketio.response_time.mean': 200
 
 scenarios:
   - engine: "socketio"
@@ -54,8 +61,10 @@ scenarios:
             json: "$[0]"
             as: "createdGroup"
       # - log: "createdGroup: {{ createdGroup }}"
-      - emit:
-          channel: "message:create"
-          data:
-            groupId: "{{ createdGroup._id }}"
-            text: "Hello World!"
+      - loop:
+          - emit:
+              channel: "message:create"
+              data:
+                groupId: "{{ createdGroup._id }}"
+                text: "Hello World!"
+        count: 1000

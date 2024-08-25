@@ -7,8 +7,19 @@ services:
       dockerfile: Dockerfile
     environment:
       MONGO_URL: mongodb://mongodb:27017/chatter-box
+    ports:
+      - "3000:3000"
     depends_on:
       - mongodb
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '0.5'
+        reservations:
+          cpus: '0.25'
+    command: node --max-old-space-size=1024 ./src/index.js
 
   mongodb:
     image: mongo:latest

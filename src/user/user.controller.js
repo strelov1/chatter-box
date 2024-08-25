@@ -1,7 +1,8 @@
 class UserController {
-    constructor(userService) {
+    constructor(userService, logger) {
         /** @type {UserService} */
         this.userService = userService;
+        this.logger = logger;
     }
 
     async init(socket, data) {
@@ -11,10 +12,10 @@ class UserController {
 
             userGroups.forEach(groupId => {
                 socket.join(groupId);
-                console.log(`User ${userId} (socket ${socket.id}) joined group ${groupId}`);
+                this.logger.info(`User ${userId} (socket ${socket.id}) joined group ${groupId}`);
             });
         } catch (error) {
-            console.error('Authentication failed:', error);
+            this.logger.error('Authentication failed:', error);
             socket.emit('error', error.message);
         }
     }
