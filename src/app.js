@@ -4,8 +4,8 @@ const http = require('http');
 const pino = require('pino');
 const pretty = require('pino-pretty');
 const { Server } = require('socket.io');
-const { createClient } = require('redis');
-const { createAdapter } = require('@socket.io/redis-adapter');
+// const { createClient } = require('redis');
+// const { createAdapter } = require('@socket.io/redis-adapter');
 
 const { IoCContainer } = require('./utils/ioc-container');
 const { Logger } = require('./utils/logger');
@@ -53,13 +53,13 @@ const app = async () => {
         logger.error('Failed to connect to MongoDB', err);
     });
 
-    const pubClient = createClient({ url: process.env.REDIS_URL });
-    const subClient = pubClient.duplicate();
-
-    await pubClient.connect();
-    await subClient.connect();
-
-    socket.adapter(createAdapter(pubClient, subClient));
+    // const pubClient = createClient({ url: process.env.REDIS_URL });
+    // const subClient = pubClient.duplicate();
+    //
+    // await pubClient.connect();
+    // await subClient.connect();
+    //
+    // socket.adapter(createAdapter(pubClient, subClient));
 
     container.register(
         'Logger',
@@ -121,10 +121,12 @@ const app = async () => {
 
     container.register(
         'UserService',
-        UserService,
+        (userRepository) => new UserService(
+            userRepository,
+            "jwtSecret",
+        ),
         [
-            'UserRepository',
-            'Transport'
+            'UserRepository'
         ]
     );
 

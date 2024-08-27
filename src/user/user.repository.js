@@ -1,23 +1,29 @@
+const {UserModel} = require("./user.model");
+
 class UserRepository {
-    async create(name, members) {
-        const group = new GroupModel({ name, members });
-        return group.save();
+    async createUser(username, passwordHash) {
+        const user = new UserModel({ username, passwordHash, groups: [] });
+        return user.save();
     }
 
-    async getById(id) {
-        return GroupModel.findById(id);
+    async getUserByUsername(username) {
+        return UserModel.findOne({ username });
     }
 
-    async getAll() {
-        return GroupModel.find();
+    async getUserById(id) {
+        return UserModel.findById(id);
     }
 
-    async update(id, data) {
-        return GroupModel.findByIdAndUpdate(id, data, { new: true });
+    async updateUserGroups(userId, groups) {
+        return UserModel.findByIdAndUpdate(userId, { groups }, { new: true });
     }
 
-    async delete(id) {
-        return GroupModel.findByIdAndDelete(id);
+    async deleteUser(id) {
+        return UserModel.findByIdAndDelete(id);
+    }
+
+    async getAllUsers() {
+        return UserModel.find();
     }
 }
 
