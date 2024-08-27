@@ -6,16 +6,17 @@ class SocketIoTransport {
         this.logger = logger;
     }
     sendToGroup(groupId, event, message) {
-        this.socket.in(groupId).emit(event, message);
+        // this.logger.info({event, groupId, message});
+        this.socket.emit(event, message);
     }
 
-    joinMembers(groupId, members) {
+    async joinMembers(groupId, members) {
         for (const userId of members) {
-            this.join(groupId, userId);
+            await this.join(groupId, userId);
         }
     }
-    join(groupId, userId) {
-        const socketId = this.userSocketMapping.getSocketId(userId);
+    async join(groupId, userId) {
+        const socketId = await this.userSocketMapping.getSocketId(userId);
         if (!socketId) {
             this.logger.error(`Socket for user ${userId} not found`);
             return;

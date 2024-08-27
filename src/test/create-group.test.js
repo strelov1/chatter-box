@@ -5,9 +5,9 @@ const mongoose = require('mongoose');
 const app = require('../app');
 
 let server;
-const socketUrl = 'http://localhost:3000';
+const socketUrl = 'http://localhost:3031';
 const dbUrl = 'mongodb://localhost:27017/e2e_test_db';
-
+const redisUrl = 'redis://localhost:6379';
 test.before(async () => {
     await mongoose.connect(dbUrl, {
         useNewUrlParser: true,
@@ -15,8 +15,9 @@ test.before(async () => {
     });
     process.env.MONGO_URL = dbUrl;
     process.env.PORT = "3031"
+    process.env.REDIS_URL = redisUrl
 
-    server = app();
+    server = await app();
 });
 
 test.after(async () => {
@@ -35,7 +36,7 @@ test('Create group', async () => {
         client.on('connect', resolve);
     });
 
-    client.emit('authenticate', { userId: userId1 });
+    await client.emit('authenticate', { userId: userId1 });
 
     await client.emit('group:create', {
         name: 'Test Group',

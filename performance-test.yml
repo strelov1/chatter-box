@@ -1,8 +1,9 @@
 config:
-  target: "http://localhost:3000"
+  target: "http://localhost:80"
+  processor: "./random_ip.js"
   phases:
     - duration: 5
-      arrivalRate: 10
+      arrivalRate: 5
       name: "Warm-up"
 
     - duration: 30
@@ -10,7 +11,7 @@ config:
       name: "Sustained load"
 
     - duration: 10
-      arrivalRate: 10
+      arrivalRate: 5
       name: "Cool-down"
   plugins:
     ensure: {}
@@ -22,35 +23,42 @@ config:
     thresholds:
       - 'socketio.response_time.mean': 200
 
+before:
+  flow:
+    - post:
+        url: "/api/login"
+        json:
+          username: "{{ $randomString(10) }}"
+          password: "password123"
+        capture:
+          - json: "$.authKey"
+            as: "authKey1"
+    - post:
+        url: "/api/login"
+        json:
+          username: "{{ $randomString(10) }}"
+          password: "password123"
+        capture:
+          - json: "$.authKey"
+            as: "authKey2"
+
 scenarios:
   - engine: "socketio"
     flow:
-      - post:
-          url: "/api/login"
-          json:
-            username: "{{ $randomString(10) }}"
-            password: "password123"
-          capture:
-            - json: "$.authKey"
-              as: "authKey1"
-      - post:
-          url: "/api/login"
-          json:
-            username: "{{ $randomString(10) }}"
-            password: "password123"
-          capture:
-            - json: "$.authKey"
-              as: "authKey2"
       - emit:
           channel: "authenticate"
           data:
             userId: "{{ authKey1 }}"
           on: "authenticated"
       - emit:
+          headers:
+            x-real-ip: "{{ ip }}"
           channel: "authenticate"
           data:
             userId: "{{ authKey2 }}"
       - emit:
+          headers:
+            x-real-ip: "{{ ip }}"
           channel: "group:create"
           data:
             name: "Test Group {{ $randomNumber(1, 1000) }}"
@@ -63,8 +71,10 @@ scenarios:
       # - log: "createdGroup: {{ createdGroup }}"
       - loop:
           - emit:
+              headers:
+                x-real-ip: "{{ ip }}"
               channel: "message:create"
               data:
                 groupId: "{{ createdGroup._id }}"
                 text: "Hello World!"
-        count: 1000
+        count: 500

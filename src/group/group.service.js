@@ -18,7 +18,7 @@ class GroupService {
             for (const userId of members) {
                 this.transport.join(groupId, userId);
             }
-            this.transport.sendToGroup(groupId, 'group:created', group);
+            await this.transport.sendToGroup(groupId, 'group:created', group);
         } catch (error) {
             this.logger.error('group:created:error', error);
         }
@@ -31,9 +31,9 @@ class GroupService {
             });
 
             this.transport.joinMembers(groupId, members);
-            this.transport.sendToGroup(groupId, 'group:joined', group);
+            await this.transport.sendToGroup(groupId, 'group:joined', group);
         } catch (error) {
-            this.transport.sendToGroup(groupId, 'group:join:error', error.message);
+            await this.transport.sendToGroup(groupId, 'group:join:error', error.message);
         }
     }
 

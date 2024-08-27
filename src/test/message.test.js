@@ -7,7 +7,7 @@ const app = require('../app');
 let server;
 const socketUrl = 'http://localhost:3030';
 const dbUrl = 'mongodb://localhost:27017/e2e_test_db2';
-
+const redisUrl = 'redis://localhost:6379';
 test.before(async () => {
     await mongoose.connect(dbUrl, {
         useNewUrlParser: true,
@@ -15,8 +15,9 @@ test.before(async () => {
     });
     process.env.MONGO_URL = dbUrl;
     process.env.PORT = "3030"
+    process.env.REDIS_URL = redisUrl
 
-    server = app();
+    server = await app();
 });
 
 test.after(async () => {
@@ -39,8 +40,8 @@ test('Create group and send message', async () => {
         client2.on('connect', resolve);
     });
 
-    client1.emit('authenticate', { userId: userId1 });
-    client2.emit('authenticate', { userId: userId2 });
+    await client1.emit('authenticate', { userId: userId1 });
+    await client2.emit('authenticate', { userId: userId2 });
 
     await client1.emit('group:create', {
         name: 'Test Group',
