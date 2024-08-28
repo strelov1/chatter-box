@@ -28,10 +28,7 @@ const app = async () => {
         ignore: 'pid,hostname'
     }));
 
-    mongoose.connect(process.env.MONGO_URL, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    }).then(() => {
+    mongoose.connect(process.env.MONGO_URL).then(() => {
         logger.info('Connected to MongoDB');
     }).catch(err => {
         logger.error('Failed to connect to MongoDB', err);

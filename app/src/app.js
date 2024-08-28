@@ -48,10 +48,7 @@ const app = async () => {
         ignore: 'pid,hostname'
     }));
 
-    mongoose.connect(process.env.MONGO_URL, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    }).then(() => {
+    mongoose.connect(process.env.MONGO_URL).then(() => {
         logger.info('Connected to MongoDB');
     }).catch(err => {
         logger.error('Failed to connect to MongoDB', err);
@@ -164,19 +161,19 @@ const app = async () => {
         ]
     );
 
-    socket.use(socketAuthMiddleware(jwtSecret, logger))
+    // socket.use(socketAuthMiddleware(jwtSecret, logger))
 
     socket.on('connection', (clientSocket) => {
         logger.info(`User connected: ${clientSocket.userId} by Socket: ${clientSocket.id}`);
 
-        if (!clientSocket.userId) {
-            throw new Error("Connection is not authorized");
-        }
+        // if (!clientSocket.userId) {
+        //     throw new Error("Connection is not authorized");
+        // }
 
         const userSocketMapping = container.get('UserSocketMapping');
 
         logger.info(`User ${clientSocket.userId} is now associated with Socket ${clientSocket.id}`);
-        userSocketMapping.add(clientSocket.userId, clientSocket.id);
+        // userSocketMapping.add(clientSocket.userId, clientSocket.id);
 
         // Register handlers
         [
@@ -187,8 +184,8 @@ const app = async () => {
         // Register handlers
 
         clientSocket.on('disconnect', async () => {
-            await userSocketMapping.removeBySocketId(clientSocket.id);
-            logger.info(`Socket ${clientSocket.id} disconnected and removed from mapping`);
+            // await userSocketMapping.removeBySocketId(clientSocket.id);
+            // logger.info(`Socket ${clientSocket.id} disconnected and removed from mapping`);
         });
     });
 

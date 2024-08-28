@@ -9,10 +9,7 @@ const socketUrl = 'http://localhost:3032';
 const dbUrl = 'mongodb://localhost:27017/e2e_test_db3';
 
 test.before(async () => {
-    await mongoose.connect(dbUrl, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    });
+    await mongoose.connect(dbUrl);
     process.env.MONGO_URL = dbUrl;
     process.env.PORT = "3032";
 
