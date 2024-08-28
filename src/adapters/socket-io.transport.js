@@ -6,14 +6,14 @@ class SocketIoTransport {
         this.logger = logger;
     }
     sendToGroup(groupId, event, message) {
-        // this.logger.info({event, groupId, message});
-        this.socket.emit(event, message);
+        this.logger.info(`event: ${event}, groupId: ${groupId}, message: ${JSON.stringify(message)}`);
+        this.socket.in(groupId).emit(event, message);
     }
 
     async joinMembers(groupId, members) {
-        for (const userId of members) {
-            await this.join(groupId, userId);
-        }
+        await Promise.all(members.map((userId) => {
+            return this.join(groupId, userId);
+        }))
     }
     async join(groupId, userId) {
         const socketId = await this.userSocketMapping.getSocketId(userId);

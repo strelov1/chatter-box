@@ -14,7 +14,11 @@ class UserController {
 
         try {
             const user = await this.userService.register(username, password);
-            return res.status(201).json({ message: 'User registered successfully', userId: user._id });
+            return res.status(201).json({
+                message: 'User registered successfully',
+                userId: user._id,
+                userName: username,
+            });
         } catch (error) {
             this.logger.error('Registration failed:', error);
             return res.status(400).json({ error: error.message });

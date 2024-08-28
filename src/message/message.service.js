@@ -14,7 +14,7 @@ class MessageService {
             const message = await this.messageRepository.create(groupId, text);
             await this.transport.sendToGroup(groupId, 'message:created', message);
         } catch (error) {
-            this.logger.error('message:created:error', error);
+            this.logger.error(error);
         }
     }
 }

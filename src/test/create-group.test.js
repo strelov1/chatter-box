@@ -2,12 +2,16 @@ const test = require('node:test');
 const assert = require('assert');
 const { io } = require('socket.io-client');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const app = require('../app');
+const {UserModel} = require("../user/user.model");
+
 
 let server;
 const socketUrl = 'http://localhost:3031';
-const dbUrl = 'mongodb://localhost:27017/e2e_test_db';
+const dbUrl = 'mongodb://localhost:27017/e2e_test_db_1';
 const redisUrl = 'redis://localhost:6379';
+
 test.before(async () => {
     await mongoose.connect(dbUrl, {
         useNewUrlParser: true,
@@ -18,6 +22,15 @@ test.before(async () => {
     process.env.REDIS_URL = redisUrl
 
     server = await app();
+
+    // Создаем пользователей в базе данных
+    const user1 = new UserModel({ username: 'user1', password: 'password123', passwordHash: 'password123' });
+    const user2 = new UserModel({ username: 'user2', password: 'password123', passwordHash: 'password123' });
+    const user3 = new UserModel({ username: 'user3', password: 'password123', passwordHash: 'password123' });
+
+    await user1.save();
+    await user2.save();
+    await user3.save();
 });
 
 test.after(async () => {
@@ -28,19 +41,20 @@ test.after(async () => {
 });
 
 test('Create group', async () => {
-    const userId1 = 1;
-    const userId2 = 2;
-    const client = io(socketUrl);
+    const user1 = await UserModel.findOne({ username: 'user1' });
+    const user2 = await UserModel.findOne({ username: 'user2' });
+
+    const client = io(socketUrl, {
+        auth: { token: jwt.sign({ userId: user1._id }, 'jwtSecret') }
+    });
 
     await new Promise((resolve) => {
         client.on('connect', resolve);
     });
 
-    await client.emit('authenticate', { userId: userId1 });
-
     await client.emit('group:create', {
         name: 'Test Group',
-        members: [userId1, userId2]
+        members: [user1._id, user2._id]
     });
 
     const createdGroup = await new Promise((resolve) => {
@@ -49,27 +63,27 @@ test('Create group', async () => {
 
     assert.strictEqual(createdGroup.name, 'Test Group');
     assert.strictEqual(createdGroup.members.length, 2);
-    assert.strictEqual(createdGroup.members[0], userId1);
-    assert.strictEqual(createdGroup.members[1], userId2);
+    assert.strictEqual(createdGroup.members[0], user1._id.toString());
+    assert.strictEqual(createdGroup.members[1], user2._id.toString());
     client.close();
 });
 
-
 test('Join new member', async () => {
-    const userId1 = 1;
-    const userId2 = 2;
-    const userId3 = 3;
-    const client = io(socketUrl);
+    const user1 = await UserModel.findOne({ username: 'user1' });
+    const user2 = await UserModel.findOne({ username: 'user2' });
+    const user3 = await UserModel.findOne({ username: 'user3' });
+
+    const client = io(socketUrl, {
+        auth: { token: jwt.sign({ userId: user1._id }, 'jwtSecret') }
+    });
 
     await new Promise((resolve) => {
         client.on('connect', resolve);
     });
 
-    client.emit('authenticate', { userId: userId1 });
-
     await client.emit('group:create', {
         name: 'Test Group',
-        members: [userId1, userId2]
+        members: [user1._id, user2._id]
     });
 
     const createdGroup = await new Promise((resolve) => {
@@ -78,7 +92,7 @@ test('Join new member', async () => {
 
     await client.emit('group:join', {
         groupId: createdGroup._id,
-        members: [userId3]
+        members: [user3._id]
     });
 
     const joinedGroup = await new Promise((resolve) => {
@@ -87,9 +101,9 @@ test('Join new member', async () => {
 
     assert.strictEqual(joinedGroup.name, 'Test Group');
     assert.strictEqual(joinedGroup.members.length, 3);
-    assert.strictEqual(joinedGroup.members[0], userId1);
-    assert.strictEqual(joinedGroup.members[1], userId2);
-    assert.strictEqual(joinedGroup.members[2], userId3);
+    assert.strictEqual(joinedGroup.members[0], user1._id.toString());
+    assert.strictEqual(joinedGroup.members[1], user2._id.toString());
+    assert.strictEqual(joinedGroup.members[2], user3._id.toString());
 
     client.close();
 });

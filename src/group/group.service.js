@@ -16,11 +16,11 @@ class GroupService {
             const group = await this.groupRepository.create(name, members);
             const groupId = String(group._id);
             for (const userId of members) {
-                this.transport.join(groupId, userId);
+                await this.transport.join(groupId, userId);
             }
             await this.transport.sendToGroup(groupId, 'group:created', group);
         } catch (error) {
-            this.logger.error('group:created:error', error);
+            this.logger.error(error);
         }
     }
 
@@ -30,7 +30,7 @@ class GroupService {
                 $addToSet: { members: { $each: members } }
             });
 
-            this.transport.joinMembers(groupId, members);
+            await this.transport.joinMembers(groupId, members);
             await this.transport.sendToGroup(groupId, 'group:joined', group);
         } catch (error) {
             await this.transport.sendToGroup(groupId, 'group:join:error', error.message);

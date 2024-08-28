@@ -4,8 +4,8 @@ const http = require('http');
 const pino = require('pino');
 const pretty = require('pino-pretty');
 const { Server } = require('socket.io');
-// const { createClient } = require('redis');
-// const { createAdapter } = require('@socket.io/redis-adapter');
+const { createClient } = require('redis');
+const { createAdapter } = require('@socket.io/redis-adapter');
 
 const { IoCContainer } = require('./utils/ioc-container');
 const { Logger } = require('./utils/logger');
@@ -28,8 +28,12 @@ const { groupEvents } = require("./group/group.events");
 const { messageEvents } = require("./message/message.events");
 const { userEvents } = require("./user/user.events");
 const { userRouter } = require("./user/user.router");
+const { socketAuthMiddleware } = require("./middlewares/socket-auth.middleware");
+
 
 const app = async () => {
+    const jwtSecret = process.env.JWT_SECRET  || "jwtSecret"
+
     const container = new IoCContainer();
 
     const app = express();
@@ -53,13 +57,13 @@ const app = async () => {
         logger.error('Failed to connect to MongoDB', err);
     });
 
-    // const pubClient = createClient({ url: process.env.REDIS_URL });
-    // const subClient = pubClient.duplicate();
-    //
-    // await pubClient.connect();
-    // await subClient.connect();
-    //
-    // socket.adapter(createAdapter(pubClient, subClient));
+    const pubClient = createClient({ url: process.env.REDIS_URL });
+    const subClient = pubClient.duplicate();
+
+    await pubClient.connect();
+    await subClient.connect();
+
+    socket.adapter(createAdapter(pubClient, subClient));
 
     container.register(
         'Logger',
@@ -123,7 +127,7 @@ const app = async () => {
         'UserService',
         (userRepository) => new UserService(
             userRepository,
-            "jwtSecret",
+            jwtSecret,
         ),
         [
             'UserRepository'
@@ -163,8 +167,19 @@ const app = async () => {
         ]
     );
 
+    socket.use(socketAuthMiddleware(jwtSecret, logger))
+
     socket.on('connection', (clientSocket) => {
-        logger.info(`Client connected: ${clientSocket.id}`);
+        logger.info(`User connected: ${clientSocket.userId} by Socket: ${clientSocket.id}`);
+
+        if (!clientSocket.userId) {
+            throw new Error("Connection is not authorized");
+        }
+
+        const userSocketMapping = container.get('UserSocketMapping');
+
+        logger.info(`User ${clientSocket.userId} is now associated with Socket ${clientSocket.id}`);
+        userSocketMapping.add(clientSocket.userId, clientSocket.id);
 
         // Register handlers
         [
@@ -173,13 +188,6 @@ const app = async () => {
             userEvents,
         ].forEach(handler => handler(clientSocket, container));
         // Register handlers
-
-        const userSocketMapping = container.get('UserSocketMapping');
-
-        clientSocket.on('authenticate', async (data) => {
-            await userSocketMapping.add(data.userId, clientSocket.id);
-            logger.info(`User ${data.userId} is now associated with socket ${clientSocket.id}`);
-        });
 
         clientSocket.on('disconnect', async () => {
             await userSocketMapping.removeBySocketId(clientSocket.id);

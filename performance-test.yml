@@ -1,24 +1,13 @@
 config:
   target: "http://localhost:80"
-  processor: "./random_ip.js"
   phases:
-    - duration: 5
-      arrivalRate: 5
-      name: "Warm-up"
-
-    - duration: 30
+    - duration: 60
       arrivalRate: 10
       name: "Sustained load"
-
-    - duration: 10
-      arrivalRate: 5
-      name: "Cool-down"
+  socketio:
+    transports: ['websocket']
   plugins:
     ensure: {}
-  protocols:
-    socketio:
-      transport: "websocket"
-      path: "/socket.io"
   ensure:
     thresholds:
       - 'socketio.response_time.mean': 200
@@ -26,43 +15,45 @@ config:
 before:
   flow:
     - post:
-        url: "/api/login"
+        url: "/api/register"
         json:
           username: "{{ $randomString(10) }}"
+          password: "password123"
+        capture:
+          - json: "$.userId"
+            as: "userId1"
+          - json: "$.userName"
+            as: "userName1"
+    - post:
+        url: "/api/register"
+        json:
+          username: "{{ $randomString(10) }}"
+          password: "password123"
+        capture:
+          - json: "$.userId"
+            as: "userId2"
+          - json: "$.userName"
+            as: "userName2"
+    - post:
+        url: "/api/login"
+        json:
+          username: "{{ userName1 }}"
           password: "password123"
         capture:
           - json: "$.authKey"
             as: "authKey1"
-    - post:
-        url: "/api/login"
-        json:
-          username: "{{ $randomString(10) }}"
-          password: "password123"
-        capture:
-          - json: "$.authKey"
-            as: "authKey2"
 
 scenarios:
   - engine: "socketio"
+    socketio:
+      extraHeaders:
+        authorization: "{{ authKey1 }}"
     flow:
       - emit:
-          channel: "authenticate"
-          data:
-            userId: "{{ authKey1 }}"
-          on: "authenticated"
-      - emit:
-          headers:
-            x-real-ip: "{{ ip }}"
-          channel: "authenticate"
-          data:
-            userId: "{{ authKey2 }}"
-      - emit:
-          headers:
-            x-real-ip: "{{ ip }}"
           channel: "group:create"
           data:
             name: "Test Group {{ $randomNumber(1, 1000) }}"
-            members: ["{{ authKey1 }}", "{{ authKey2 }}"]
+            members: ["{{ userId1 }}", "{{ userId2 }}"]
         response:
           on: "group:created"
           capture:
@@ -71,10 +62,8 @@ scenarios:
       # - log: "createdGroup: {{ createdGroup }}"
       - loop:
           - emit:
-              headers:
-                x-real-ip: "{{ ip }}"
               channel: "message:create"
               data:
                 groupId: "{{ createdGroup._id }}"
                 text: "Hello World!"
-        count: 500
+        count: 300
