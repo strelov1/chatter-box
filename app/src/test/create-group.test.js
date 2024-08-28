@@ -23,7 +23,6 @@ test.before(async () => {
 
     server = await app();
 
-    // Создаем пользователей в базе данных
     const user1 = new UserModel({ username: 'user1', password: 'password123', passwordHash: 'password123' });
     const user2 = new UserModel({ username: 'user2', password: 'password123', passwordHash: 'password123' });
     const user3 = new UserModel({ username: 'user3', password: 'password123', passwordHash: 'password123' });

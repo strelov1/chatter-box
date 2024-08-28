@@ -1,4 +1,5 @@
 const userRouter = (router, container) => {
+    /** @type {UserController} */
     const userController = container.get('UserController');
 
     router.post('/register', userController.register.bind(userController));

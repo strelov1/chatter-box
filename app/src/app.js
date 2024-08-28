@@ -27,7 +27,7 @@ const { UserRepository } = require('./user/user.repository');
 const { groupEvents } = require("./group/group.events");
 const { messageEvents } = require("./message/message.events");
 const { userEvents } = require("./user/user.events");
-const { userRouter } = require("./user/user.router");
+
 const { socketAuthMiddleware } = require("./middlewares/socket-auth.middleware");
 
 
@@ -125,10 +125,7 @@ const app = async () => {
 
     container.register(
         'UserService',
-        (userRepository) => new UserService(
-            userRepository,
-            jwtSecret,
-        ),
+        UserService,
         [
             'UserRepository'
         ]
@@ -196,10 +193,6 @@ const app = async () => {
     });
 
     app.use(express.json());
-    app.use('/api', userRouter(
-        express.Router(),
-        container
-    ));
 
     const port = process.env.PORT || 3000;
 

@@ -1,14 +1,37 @@
 version: '3.8'
 
 services:
+  auth:
+    build:
+      dockerfile: auth/Dockerfile
+    environment:
+      MONGO_URL: mongodb://mongodb:27017/chatter-box
+      JWT_SECRET: jwtSecret
+      PORT: 3030
+    ports:
+      - "3030:3030"
+    depends_on:
+      - mongodb
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '0.5'
+        reservations:
+          cpus: '0.25'
+    command: node --max-old-space-size=1024 ./src/index.js
+    networks:
+      - network
+
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      dockerfile: app/Dockerfile
     environment:
       MONGO_URL: mongodb://mongodb:27017/chatter-box
       REDIS_URL: redis://redis:6379
       JWT_SECRET: jwtSecret
+      PORT: 3000
     ports:
       - "3000"
     depends_on:

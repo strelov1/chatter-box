@@ -20,7 +20,7 @@ class UserController {
                 userName: username,
             });
         } catch (error) {
-            this.logger.error('Registration failed:', error);
+            this.logger.error(error);
             return res.status(400).json({ error: error.message });
         }
     }
@@ -36,23 +36,8 @@ class UserController {
             const authKey = await this.userService.authenticate(username, password);
             return res.json({ authKey });
         } catch (error) {
-            this.logger.error('Login failed:', error);
+            this.logger.error(error);
             return res.status(401).json({ error: error.message });
-        }
-    }
-
-    async init(socket, data) {
-        try {
-            const { userId } = data;
-            const userGroups = await this.userService.getAllGroups(userId);
-
-            userGroups.forEach(groupId => {
-                socket.join(groupId);
-                this.logger.info(`User ${userId} (socket ${socket.id}) joined group ${groupId}`);
-            });
-        } catch (error) {
-            this.logger.error('Authentication failed:', error);
-            socket.emit('error', error.message);
         }
     }
 }

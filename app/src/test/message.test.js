@@ -2,8 +2,9 @@ const test = require('node:test');
 const assert = require('assert');
 const { io } = require('socket.io-client');
 const mongoose = require('mongoose');
-const axios = require('axios');
+const jwt = require('jsonwebtoken');
 const app = require('../app');
+const {UserModel} = require("../user/user.model");
 
 let server;
 const socketUrl = 'http://localhost:3030';
@@ -20,6 +21,12 @@ test.before(async () => {
     process.env.REDIS_URL = redisUrl;
 
     server = await app();
+
+    const user1 = new UserModel({ username: 'user1', password: 'password123', passwordHash: 'password123' });
+    const user2 = new UserModel({ username: 'user2', password: 'password123', passwordHash: 'password123' });
+
+    await user1.save();
+    await user2.save();
 });
 
 test.after(async () => {
@@ -30,47 +37,15 @@ test.after(async () => {
 });
 
 test('Create users, create group, and send message', async () => {
-    // Register user1
-    const registerResponse1 = await axios.post(`${socketUrl}/api/register`, {
-        username: 'user1',
-        password: 'password123'
-    });
-    assert.strictEqual(registerResponse1.status, 201);
+    const user1 = await UserModel.findOne({ username: 'user1' });
+    const user2 = await UserModel.findOne({ username: 'user2' });
 
-    // Register user2
-    const registerResponse2 = await axios.post(`${socketUrl}/api/register`, {
-        username: 'user2',
-        password: 'password123'
-    });
-    assert.strictEqual(registerResponse2.status, 201);
-
-    // Login user1 and get authKey
-    const loginResponse1 = await axios.post(`${socketUrl}/api/login`, {
-        username: 'user1',
-        password: 'password123'
-    });
-    assert.strictEqual(loginResponse1.status, 200);
-    const authKey1 = loginResponse1.data.authKey;
-
-    // Login user2 and get authKey
-    const loginResponse2 = await axios.post(`${socketUrl}/api/login`, {
-        username: 'user2',
-        password: 'password123'
-    });
-    assert.strictEqual(loginResponse2.status, 200);
-    const authKey2 = loginResponse2.data.authKey;
-
-    // Connect users via Socket.IO
     const client1 = io(socketUrl, {
-        auth: {
-            token: authKey1
-        }
+        auth: { token: jwt.sign({ userId: user1._id }, 'jwtSecret') }
     });
 
     const client2 = io(socketUrl, {
-        auth: {
-            token: authKey2
-        }
+        auth: { token: jwt.sign({ userId: user2._id }, 'jwtSecret') }
     });
 
     await new Promise((resolve) => {
@@ -83,7 +58,7 @@ test('Create users, create group, and send message', async () => {
     // Create a group with both users
     await client1.emit('group:create', {
         name: 'Test Group',
-        members: [registerResponse1.data.userId, registerResponse2.data.userId]
+        members: [user1._id, user2._id]
     });
 
     const createdGroup = await new Promise((resolve) => {
@@ -91,7 +66,7 @@ test('Create users, create group, and send message', async () => {
     });
 
     // Send a message in the created group
-    client1.emit('message:create', {
+    await client1.emit('message:create', {
         groupId: createdGroup._id,
         text: 'Hello World!'
     });
@@ -100,6 +75,7 @@ test('Create users, create group, and send message', async () => {
     const createdMessage1 = await new Promise((resolve) => {
         client1.on('message:created', resolve);
     });
+
     assert.strictEqual(createdMessage1.text, 'Hello World!');
 
     const createdMessage2 = await new Promise((resolve) => {

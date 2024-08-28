@@ -1,6 +1,5 @@
 const test = require('node:test');
 const assert = require('assert');
-const { io } = require('socket.io-client');
 const mongoose = require('mongoose');
 const axios = require('axios');
 const app = require('../app');
@@ -8,7 +7,6 @@ const app = require('../app');
 let server;
 const socketUrl = 'http://localhost:3032';
 const dbUrl = 'mongodb://localhost:27017/e2e_test_db3';
-const redisUrl = 'redis://localhost:6379';
 
 test.before(async () => {
     await mongoose.connect(dbUrl, {
@@ -17,7 +15,6 @@ test.before(async () => {
     });
     process.env.MONGO_URL = dbUrl;
     process.env.PORT = "3032";
-    process.env.REDIS_URL = redisUrl;
 
     server = await app();
 });
