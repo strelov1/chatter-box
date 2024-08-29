@@ -16,10 +16,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1g
-          cpus: '0.5'
-        reservations:
+          memory: 512m
           cpus: '0.25'
+        reservations:
+          cpus: '0.1'
     command: node --max-old-space-size=1024 ./src/index.js
     networks:
       - network
@@ -41,10 +41,10 @@ services:
       replicas: 3
       resources:
         limits:
-          memory: 1g
-          cpus: '0.5'
-        reservations:
+          memory: 512m
           cpus: '0.25'
+        reservations:
+          cpus: '0.1'
     command: node --max-old-space-size=1024 ./src/index.js
     networks:
       - network

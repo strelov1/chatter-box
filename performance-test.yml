@@ -1,8 +1,11 @@
 config:
   target: "http://localhost:80"
   phases:
+    - duration: 5
+      arrivalRate: 5
+      name: "Warm up"
     - duration: 60
-      arrivalRate: 10
+      arrivalRate: 20
       name: "Sustained load"
   socketio:
     transports: ['websocket']
@@ -66,4 +69,4 @@ scenarios:
               data:
                 groupId: "{{ createdGroup._id }}"
                 text: "Hello World!"
-        count: 300
+        count: 500
