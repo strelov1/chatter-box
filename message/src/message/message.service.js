@@ -1,18 +1,18 @@
 class MessageService {
     constructor(
+        messageRepository,
         transport,
         logger,
     ) {
+        this.messageRepository = messageRepository;
         this.transport = transport;
         this.logger = logger;
     }
 
     async create({ groupId, text }) {
         try {
-            await this.transport.sendToGroup(groupId, 'message:created',  {
-                groupId,
-                text
-            });
+            const message = await this.messageRepository.create(groupId, text);
+            await this.transport.sendToGroup(groupId, 'message:created', message);
         } catch (error) {
             this.logger.error(error);
         }

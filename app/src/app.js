@@ -6,6 +6,7 @@ const pretty = require('pino-pretty');
 const { Server } = require('socket.io');
 const { createClient } = require('redis');
 const { createAdapter } = require('@socket.io/redis-adapter');
+const { Kafka } = require('kafkajs');
 
 const { IoCContainer } = require('./utils/ioc-container');
 const { Logger } = require('./utils/logger');
@@ -18,7 +19,6 @@ const { GroupController } = require("./group/group.controller");
 
 const { MessageController } = require('./message/message.controller');
 const { MessageService } = require('./message/message.service');
-const { MessageRepository } = require('./message/message.repository');
 
 const { UserController } = require('./user/user.controller');
 const { UserService } = require('./user/user.service');
@@ -29,7 +29,10 @@ const { messageEvents } = require("./message/message.events");
 const { userEvents } = require("./user/user.events");
 
 const { socketAuthMiddleware } = require("./middlewares/socket-auth.middleware");
-
+const { KafkaTransport } = require("./adapters/kafka.transport");
+const { KafkaProducer } = require("./adapters/kafka.producer");
+const { KafkaConsumer } = require("./adapters/kafka.consumer");
+const { MessageHandler } = require("./adapters/message.handler");
 
 const app = async () => {
     const jwtSecret = process.env.JWT_SECRET  || "jwtSecret"
@@ -60,6 +63,11 @@ const app = async () => {
     await pubClient.connect();
     await subClient.connect();
 
+    const kafka = new Kafka({
+        clientId: 'messages',
+        brokers: [process.env.KAFKA_URL]
+    });
+
     socket.adapter(createAdapter(pubClient, subClient));
 
     container.register(
@@ -86,6 +94,26 @@ const app = async () => {
     );
 
     container.register(
+        'KafkaProducer',
+        (logger) => new KafkaProducer(
+            kafka,
+            logger
+        ),
+        [
+            'Logger'
+        ]
+    );
+
+    container.register(
+        'KafkaTransport',
+        KafkaTransport,
+        [
+            'KafkaProducer',
+            'Logger'
+        ]
+    );
+
+    container.register(
         'UserRepository',
         UserRepository
     );
@@ -93,11 +121,6 @@ const app = async () => {
     container.register(
         'GroupRepository',
         GroupRepository
-    );
-
-    container.register(
-        'MessageRepository',
-        MessageRepository
     );
 
     container.register(
@@ -111,11 +134,19 @@ const app = async () => {
     );
 
     container.register(
-        'MessageService',
+        'MessageInService',
         MessageService,
         [
-            'MessageRepository',
-            'Transport',
+            'KafkaTransport',
+            'Logger',
+        ]
+    );
+
+    container.register(
+        'MessageOutService',
+        MessageService,
+        [
+            'KafkaTransport',
             'Logger',
         ]
     );
@@ -140,23 +171,39 @@ const app = async () => {
         'MessageController',
         MessageController,
         [
-            'MessageService',
+            'MessageInService',
         ]
     );
-
-    container.register(
-        'MessageController',
-        MessageController,
-        [
-            'MessageService',
-        ]
-    )
 
     container.register(
         'UserController',
         UserController,
         [
             'UserService',
+            'Logger',
+        ]
+    );
+
+    container.register(
+        'MessageHandler',
+        MessageHandler,
+        [
+            'MessageOutService',
+        ]
+    );
+
+    container.register(
+        'KafkaConsumer',
+        (messageHandler, logger) => new KafkaConsumer(
+            kafka,
+            [
+                process.env.KAFKA_PROCESSED_MESSAGES_TOPIC
+            ],
+            messageHandler,
+            logger
+        ),
+        [
+            'MessageHandler',
             'Logger',
         ]
     );
@@ -189,6 +236,14 @@ const app = async () => {
         });
     });
 
+    /** @type {KafkaConsumer} */
+    const kafkaConsumer = container.get('KafkaConsumer');
+    await kafkaConsumer.connect();
+
+    /** @type {KafkaProducer} */
+    const kafkaProducer = container.get('KafkaProducer');
+    await kafkaProducer.connect();
+
     app.use(express.json());
 
     const port = process.env.PORT || 3000;
@@ -203,6 +258,8 @@ const app = async () => {
             logger.info('Closed out remaining connections');
             socket.close();
             await mongoose.connection.close(false);
+            kafkaProducer.disconnect()
+            kafkaConsumer.disconnect()
         });
 
         setTimeout(() => {

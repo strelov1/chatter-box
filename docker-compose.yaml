@@ -31,14 +31,46 @@ services:
       MONGO_URL: mongodb://mongodb:27017/chatter-box
       REDIS_URL: redis://redis:6379
       JWT_SECRET: jwtSecret
+      KAFKA_URL: kafka:9092
+      KAFKA_INCOMING_MESSAGES_TOPIC: 'incoming-messages'
+      KAFKA_PROCESSED_MESSAGES_TOPIC: 'processed-messages'
       PORT: 3000
     ports:
       - "3000"
     depends_on:
+      - kafka
       - mongodb
     restart: always
     deploy:
-      replicas: 3
+      replicas: 1
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.25'
+        reservations:
+          cpus: '0.1'
+    command: node --max-old-space-size=1024 ./src/index.js
+    networks:
+      - network
+
+  message:
+    build:
+      dockerfile: message/Dockerfile
+    environment:
+      MONGO_URL: mongodb://mongodb:27017/chatter-box
+      REDIS_URL: redis://redis:6379
+      KAFKA_URL: kafka:9092
+      KAFKA_INCOMING_MESSAGES_TOPIC: 'incoming-messages'
+      KAFKA_PROCESSED_MESSAGES_TOPIC: 'processed-messages'
+      PORT: 3000
+    ports:
+      - "3000"
+    depends_on:
+      - kafka
+      - mongodb
+    restart: always
+    deploy:
+      replicas: 1
       resources:
         limits:
           memory: 512m
@@ -71,6 +103,43 @@ services:
     image: redis:latest
     ports:
       - "6379:6379"
+    networks:
+      - network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    depends_on:
+      - zookeeper
+    networks:
+      - network
+
+  kafka-init:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - kafka
+    entrypoint: >
+      sh -c '
+        kafka-topics --create --topic incoming-messages --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092 &&
+        kafka-topics --create --topic processed-messages --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092
+      '
     networks:
       - network
 
