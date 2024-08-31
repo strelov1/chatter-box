@@ -1,77 +1,53 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const http = require('http');
-const pino = require('pino');
-const pretty = require('pino-pretty');
 
-const { IoCContainer } = require('./utils/ioc-container');
+const { createIoCContainer } = require('./utils/ioc-container');
 const { Logger } = require('./utils/logger');
-const { UserController } = require('./user/user.controller');
-const { UserService } = require('./user/user.service');
+const { ConfigService, PORT} = require("./utils/config.service");
+const { initializeDatabase, shutdownDatabase } = require("./config/database");
+
+const { authRouter } = require("./user/auth.router");
+const { AuthController } = require('./user/auth.controller');
+const { AuthService } = require('./user/auth.service');
 const { UserRepository } = require('./user/user.repository');
 
-const { userRouter } = require("./user/user.router");
-
 const app = async () => {
-    const jwtSecret = process.env.JWT_SECRET  || "jwtSecret"
-
-    const container = new IoCContainer();
-
     const app = express();
     const server = http.createServer(app);
 
-    const logger = pino({
-        level: 'info'
-    }, pretty({
-        colorize: true,
-        translateTime: true,
-        ignore: 'pid,hostname'
-    }));
+    const container = createIoCContainer();
 
-    mongoose.connect(process.env.MONGO_URL).then(() => {
-        logger.info('Connected to MongoDB');
-    }).catch(err => {
-        logger.error('Failed to connect to MongoDB', err);
-    });
+    container.registerMultiple([
+        { token: 'Logger', useClass: Logger },
+        { token: 'ConfigService', useClass: ConfigService },
+        {
+            token: 'UserRepository',
+            useClass: UserRepository
+        },
+        {
+            token: 'AuthService',
+            useClass: AuthService,
+            dependencies: ['ConfigService', 'UserRepository', 'Logger']
+        },
+        {
+            token: 'AuthController',
+            useClass: AuthController,
+            dependencies: ['AuthService', 'Logger']
+        },
+    ]);
 
-    container.register(
-        'Logger',
-        () => new Logger(logger),
-    );
+    const logger = container.get('Logger');
+    const config = container.get('ConfigService');
 
-    container.register(
-        'UserRepository',
-        UserRepository
-    );
-
-    container.register(
-        'UserService',
-        (userRepository) => new UserService(
-            userRepository,
-            jwtSecret,
-        ),
-        [
-            'UserRepository'
-        ]
-    );
-
-    container.register(
-        'UserController',
-        UserController,
-        [
-            'UserService',
-            'Logger',
-        ]
-    );
+    await initializeDatabase(logger);
 
     app.use(express.json());
-    app.use('/api', userRouter(
+    app.use('/api/v1/auth', authRouter(
         express.Router(),
         container
     ));
 
-    const port = process.env.PORT || 3030;
-
+    const port = config.get(PORT);
     server.listen(port, () => {
         logger.info(`Server is running on port: ${port}`);
     });
@@ -80,7 +56,7 @@ const app = async () => {
         logger.info('Received shutdown signal, shutting down gracefully...');
         server.close(async () => {
             logger.info('Closed out remaining connections');
-            await mongoose.connection.close(false);
+            await shutdownDatabase(logger);
         });
 
         setTimeout(() => {

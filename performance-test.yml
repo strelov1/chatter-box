@@ -18,7 +18,7 @@ config:
 before:
   flow:
     - post:
-        url: "/api/register"
+        url: "/api/v1/auth/register"
         json:
           username: "{{ $randomString(10) }}"
           password: "password123"
@@ -28,7 +28,7 @@ before:
           - json: "$.userName"
             as: "userName1"
     - post:
-        url: "/api/register"
+        url: "/api/v1/auth/register"
         json:
           username: "{{ $randomString(10) }}"
           password: "password123"
@@ -38,7 +38,7 @@ before:
           - json: "$.userName"
             as: "userName2"
     - post:
-        url: "/api/login"
+        url: "/api/v1/auth/login"
         json:
           username: "{{ userName1 }}"
           password: "password123"
