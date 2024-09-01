@@ -81,6 +81,34 @@ services:
     networks:
       - network
 
+  gms:
+    build:
+      dockerfile: gms/Dockerfile
+    environment:
+      MONGO_URL: mongodb://mongodb:27017/chatter-box
+      REDIS_URL: redis://redis:6379
+      KAFKA_URL: kafka:9092
+      KAFKA_INCOMING_GROUPS_TOPIC: 'incoming-groups'
+      KAFKA_PROCESSED_GROUPS_TOPIC: 'processed-groups'
+      PORT: 3000
+    ports:
+      - "3000"
+    depends_on:
+      - kafka
+      - mongodb
+    restart: always
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.25'
+        reservations:
+          cpus: '0.1'
+    command: node --max-old-space-size=1024 ./src/index.js
+    networks:
+      - network
+
   mongodb:
     image: mongo:latest
     ports:

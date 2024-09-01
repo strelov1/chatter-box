@@ -65,9 +65,9 @@ const app = async () => {
     await initializeServices(container, logger);
 
     setupGracefulShutdown(async () => {
-        await shutdownDatabase(logger)
+        await shutdownDatabase(logger);
         await shutdownServices(container, logger);
-    },logger);
+    }, logger);
     
     return kafkaConsumer;
 }

@@ -1,0 +1,26 @@
+const initializeServices = async (container, logger) => {
+    /** @type {KafkaConsumer} */
+    const kafkaConsumer = container.get('KafkaConsumer');
+    await kafkaConsumer.connect();
+
+    /** @type {KafkaProducer} */
+    const kafkaProducer = container.get('KafkaProducer');
+    await kafkaProducer.connect();
+
+    logger.info('Services initialize successfully');
+};
+
+const shutdownServices = async (container, logger) => {
+    const kafkaProducer = container.get('KafkaProducer');
+    const kafkaConsumer = container.get('KafkaConsumer');
+
+    await kafkaProducer.disconnect();
+    await kafkaConsumer.disconnect();
+
+    logger.info('Services shutdown successfully');
+};
+
+module.exports = {
+    initializeServices,
+    shutdownServices
+};

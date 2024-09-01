@@ -30,6 +30,7 @@ const { initializeServices, shutdownServices} = require("./config/services");
 const { createRegisterEventHandlers } = require("./adapters/socket-event.hanlder");
 const { socketUserMapperMiddleware } = require("./middlewares/socket-user-mapper.middleware");
 const {ConfigService, KAFKA_PROCESSED_MESSAGES_TOPIC, REDIS_URL, PORT, JWT_SECRET} = require("./utils/config.service");
+const { setupGracefulShutdown } = require('./utils/gracefull-shutdown');
 
 const app = async () => {
     const server = http.createServer();
@@ -142,33 +143,12 @@ const app = async () => {
     await initializeDatabase(logger);
     await initializeServices(container, logger);
 
-    const gracefulShutdown = () => {
-        logger.info('Received shutdown signal, shutting down gracefully...');
-        server.close(async () => {
-            logger.info('Closed out remaining connections');
-            socket.close();
-            await shutdownDatabase(logger)
-            await shutdownServices(container, logger);
-        });
-
-        setTimeout(() => {
-            logger.error('Forcing shutdown');
-            process.exit(1);
-        }, 1000);
-    };
-
-    process.on('SIGTERM', gracefulShutdown);
-    process.on('SIGINT', gracefulShutdown);
-
-    process.on('uncaughtException', (err) => {
-        logger.error('Uncaught Exception:', err);
-        gracefulShutdown();
-    });
-
-    process.on('unhandledRejection', (reason, promise) => {
-        logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-        gracefulShutdown();
-    });
+    setupGracefulShutdown(async () => {
+        socket.close();
+        server.close();
+        await shutdownDatabase(logger)
+        await shutdownServices(container, logger);
+    }, logger);
 
     const port = config.get(PORT);
     server.listen(port, () => {
