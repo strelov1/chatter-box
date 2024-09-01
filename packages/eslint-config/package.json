@@ -1,0 +1,19 @@
+{
+  "name": "@chatter-box/eslint-config",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "@vercel/style-guide": "^6.0.0",
+    "eslint": "^8.46.0",
+    "eslint-config-prettier": "^8.9.0",
+    "eslint-config-turbo": "^2.1.1",
+    "eslint-plugin-prettier": "^5.0.0"
+  },
+  "scripts": {
+    "lint:scripts": "eslint ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

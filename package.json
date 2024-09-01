@@ -1,0 +1,25 @@
+{
+  "name": "chatter-box",
+  "version": "1.0.0",
+  "description": "This project is an online chat application built with a microservices architecture and event sourcing principles. The system is designed with overengineering in mind to explore and implement advanced patterns and practices.",
+  "main": "index.js",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "1.8.3",
+    "husky": "^9.1.5",
+    "turbo": "^2.1.1"
+  },
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "turbo lint --parallel --continue",
+    "format": "turbo format --parallel --continue",
+    "format:fix": "turbo format:fix --parallel --continue",
+    "build": "docker-compose up -d --build"
+  },
+  "packageManager": "npm@810.2.3",
+  "author": "",
+  "license": "ISC"
+}

@@ -3,7 +3,8 @@ version: '3.8'
 services:
   auth:
     build:
-      dockerfile: auth/Dockerfile
+      context: .
+      dockerfile: ./apps/auth/Dockerfile
     environment:
       MONGO_URL: mongodb://mongodb:27017/chatter-box
       JWT_SECRET: jwtSecret
@@ -20,13 +21,13 @@ services:
           cpus: '0.25'
         reservations:
           cpus: '0.1'
-    command: node --max-old-space-size=1024 ./src/index.js
     networks:
       - network
 
   wss:
     build:
-      dockerfile: wss/Dockerfile
+      context: .
+      dockerfile: ./apps/wss/Dockerfile
     environment:
       MONGO_URL: mongodb://mongodb:27017/chatter-box
       REDIS_URL: redis://redis:6379
@@ -49,13 +50,13 @@ services:
           cpus: '0.25'
         reservations:
           cpus: '0.1'
-    command: node --max-old-space-size=1024 ./src/index.js
     networks:
       - network
 
   msg:
     build:
-      dockerfile: msg/Dockerfile
+      context: .
+      dockerfile: ./apps/msg/Dockerfile
     environment:
       MONGO_URL: mongodb://mongodb:27017/chatter-box
       REDIS_URL: redis://redis:6379
@@ -77,13 +78,13 @@ services:
           cpus: '0.25'
         reservations:
           cpus: '0.1'
-    command: node --max-old-space-size=1024 ./src/index.js
     networks:
       - network
 
   gms:
     build:
-      dockerfile: gms/Dockerfile
+      context: .
+      dockerfile: ./apps/gms/Dockerfile
     environment:
       MONGO_URL: mongodb://mongodb:27017/chatter-box
       REDIS_URL: redis://redis:6379
@@ -105,7 +106,6 @@ services:
           cpus: '0.25'
         reservations:
           cpus: '0.1'
-    command: node --max-old-space-size=1024 ./src/index.js
     networks:
       - network
 

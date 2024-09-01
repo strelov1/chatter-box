@@ -1,0 +1,10 @@
+{
+  "name": "@chatter-box/utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,28 @@
+{
+	"name": "auth",
+	"version": "0.0.1",
+	"description": "Online chat",
+	"main": "index.js",
+	"scripts": {
+		"test": "node --test src",
+		"lint": "eslint --fix .",
+		"format": "biome check .",
+		"format:fix": "biome check . --write"
+	},
+	"keywords": ["chat"],
+	"author": "strelov1@gmail.com",
+	"license": "ISC",
+	"dependencies": {
+		"axios": "^1.7.5",
+		"bcryptjs": "^2.4.3",
+		"express": "^4.19.2",
+		"http": "^0.0.1-security",
+		"jsonwebtoken": "^9.0.2",
+		"mongoose": "^8.5.3",
+		"pino": "^9.3.2",
+		"pino-pretty": "^11.2.2"
+	},
+	"devDependencies": {
+		"@chatter-box/utils": "^1.0.0"
+	}
+}
