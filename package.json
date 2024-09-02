@@ -9,6 +9,7 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
+    "artillery-plugin-ensure": "^1.14.0",
     "husky": "^9.1.5",
     "turbo": "^2.1.1"
   },
@@ -17,7 +18,8 @@
     "lint": "turbo lint --parallel --continue",
     "format": "turbo format --parallel --continue",
     "format:fix": "turbo format:fix --parallel --continue",
-    "build": "docker-compose up -d --build"
+    "build": "docker-compose up -d --build",
+    "load": "artillery run performance-test.yml"
   },
   "packageManager": "npm@810.2.3",
   "author": "",

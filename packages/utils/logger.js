@@ -15,12 +15,16 @@ class Logger {
 		);
 	}
 
-	info(message, ...args) {
-		this.logger.info(message, ...args);
+	info(message, data) {
+		if (data) {
+			this.logger.info({ data }, message);
+		} else {
+			this.logger.info(message);
+		}
 	}
 
-	error(message, ...args) {
-		this.logger.error(message, ...args);
+	error(message, error) {
+		this.logger.error({ err: error }, message);
 	}
 }
 

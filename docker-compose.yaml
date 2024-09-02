@@ -35,6 +35,7 @@ services:
       KAFKA_URL: kafka:9092
       KAFKA_INCOMING_MESSAGES_TOPIC: 'incoming-messages'
       KAFKA_PROCESSED_MESSAGES_TOPIC: 'processed-messages'
+      KAFKA_PRODUCER_CLIENT_ID: "wss-${HOSTNAME}"
       PORT: 3000
     ports:
       - "3000"

@@ -1,8 +1,8 @@
 config:
   target: "http://localhost:80"
   phases:
-    - duration: 5
-      arrivalRate: 5
+    - duration: 1
+      arrivalRate: 1
       name: "Warm up"
     - duration: 60
       arrivalRate: 20
@@ -60,13 +60,18 @@ scenarios:
         response:
           on: "group:created"
           capture:
-            json: "$[0]"
-            as: "createdGroup"
-      # - log: "createdGroup: {{ createdGroup }}"
+            json: "$[0]._id"
+            as: "createdGroupId"
+      #- log: "Group is created: {{ createdGroupId }}"
       - loop:
           - emit:
               channel: "message:create"
               data:
-                groupId: "{{ createdGroup._id }}"
+                groupId: "{{ createdGroupId }}"
                 text: "Hello World!"
+            response:
+              on: "message:created"
+              match:
+                - json: "$[0]._id"
+                  value: "{{ createdGroupId }}"
         count: 500

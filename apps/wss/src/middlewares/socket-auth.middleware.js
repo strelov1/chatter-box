@@ -6,7 +6,9 @@ const socketAuthMiddleware = (jwtSecret, logger) => (clientSocket, next) => {
 		clientSocket.handshake.headers.authorization;
 
 	if (!token) {
-		logger.error("Token not existed");
+		logger.error("Token is not existed", {
+			headers: clientSocket.handshake.headers,
+		});
 		return next(new Error("Authentication error"));
 	}
 

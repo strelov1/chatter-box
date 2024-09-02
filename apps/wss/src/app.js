@@ -47,7 +47,7 @@ const app = async () => {
 			token: "Kafka",
 			useFactory: (config) =>
 				new Kafka({
-					clientId: "websocket-service",
+					clientId: config.get("KAFKA_PRODUCER_CLIENT_ID", "wss"),
 					brokers: [config.get("KAFKA_URL")],
 				}),
 			dependencies: ["ConfigService"],

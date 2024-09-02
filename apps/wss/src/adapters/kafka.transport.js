@@ -6,6 +6,9 @@ class KafkaTransport {
 
 	async sendToGroup(groupId, eventName, message) {
 		try {
+			if (!groupId) {
+				throw new Error("Group id is not passed");
+			}
 			const msg = {
 				key: groupId.toString(),
 				value: JSON.stringify({
