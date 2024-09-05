@@ -4,7 +4,9 @@ class KafkaConsumer {
 		this.topics = topics;
 		this.messageHandler = messageHandler;
 		this.logger = logger;
-		this.consumer = this.kafka.consumer({ groupId: "test-group2" });
+		this.consumer = this.kafka.consumer({
+			groupId: "wss-group",
+		});
 	}
 
 	async connect() {
@@ -12,23 +14,15 @@ class KafkaConsumer {
 			await this.consumer.connect();
 			this.logger.info("Kafka consumer connected");
 			for (const topic of this.topics) {
-				await this.consumer.subscribe({ topic, fromBeginning: true });
+				await this.consumer.subscribe({ topic });
 				this.logger.info(`Kafka consumer subscribed to topic: ${topic}`);
 			}
 
 			await this.consumer.run({
-				eachMessage: async ({ topic, partition, message }) => {
+				eachMessage: async ({ message }) => {
 					try {
-						this.logger.info(
-							`Consuming message from topic: ${topic}, partition: ${partition}, offset: ${message.offset}`,
-						);
-						this.logger.info(
-							`Message key: ${message.key.toString()}, value: ${message.value.toString()}`,
-						);
+						this.logger.info(`Message consumed: ${message.key.toString()}`);
 						await this.messageHandler.handleMessage(message);
-						this.logger.info(
-							`Successfully processed message from ${topic} - offset: ${message.offset}`,
-						);
 					} catch (error) {
 						this.logger.error("Failed to process message:", error);
 					}

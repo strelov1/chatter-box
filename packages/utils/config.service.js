@@ -4,14 +4,15 @@ class ConfigService {
 	}
 
 	get(key, defaultValue) {
-		const param = process.env[key]
-		if (!param) {
+		const value = process.env[key]
+		if (!value) {
 			if (defaultValue) {
 				return defaultValue;
 			}
-			throw new Error(`ENV param: ${param} is not defined`)
+			throw new Error(`ENV param: ${key} is not defined`)
 		}
-		return param;
+		console.log(`Retrieved config param: ${key} with value: ${value}`)
+		return value;
 	}
 }
 

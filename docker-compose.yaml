@@ -72,35 +72,7 @@ services:
       - mongodb
     restart: always
     deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 512m
-          cpus: '0.25'
-        reservations:
-          cpus: '0.1'
-    networks:
-      - network
-
-  gms:
-    build:
-      context: .
-      dockerfile: ./apps/gms/Dockerfile
-    environment:
-      MONGO_URL: mongodb://mongodb:27017/chatter-box
-      REDIS_URL: redis://redis:6379
-      KAFKA_URL: kafka:9092
-      KAFKA_INCOMING_GROUPS_TOPIC: 'incoming-groups'
-      KAFKA_PROCESSED_GROUPS_TOPIC: 'processed-groups'
-      PORT: 3000
-    ports:
-      - "3000"
-    depends_on:
-      - kafka
-      - mongodb
-    restart: always
-    deploy:
-      replicas: 1
+      replicas: 6
       resources:
         limits:
           memory: 512m
@@ -117,15 +89,13 @@ services:
     networks:
       - network
 
-  nginx:
-    image: nginx:latest
+  envoy:
+    image: envoyproxy/envoy:v1.31.0
     ports:
       - "80:80"
+      - "9901:9901"  # Envoy Admin Interface
     volumes:
-      - ./etc/nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - wss
-      - auth
+      - ./etc/envoy.yaml:/etc/envoy/envoy.yaml
     networks:
       - network
 
@@ -167,8 +137,8 @@ services:
       - kafka
     entrypoint: >
       sh -c '
-        kafka-topics --create --topic incoming-messages --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092 &&
-        kafka-topics --create --topic processed-messages --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092
+        kafka-topics --create --topic incoming-messages --partitions 12 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092 &&
+        kafka-topics --create --topic processed-messages --partitions 12 --replication-factor 1 --if-not-exists --bootstrap-server kafka:9092
       '
     networks:
       - network

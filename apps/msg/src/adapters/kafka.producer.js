@@ -10,7 +10,7 @@ class KafkaProducer {
 				topic,
 				messages: [message],
 			});
-			this.logger.info(`Message sent to topic ${topic}`, message);
+			this.logger.info(`Message sent to topic ${topic}`);
 		} catch (error) {
 			this.logger.error("Failed to send message to Kafka", error);
 		}

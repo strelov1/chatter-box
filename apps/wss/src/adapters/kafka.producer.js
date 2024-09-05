@@ -1,3 +1,5 @@
+const { withTimeout } = require("@chatter-box/utils");
+
 class KafkaProducer {
 	constructor(kafka, logger) {
 		this.producer = kafka.producer();
@@ -6,13 +8,16 @@ class KafkaProducer {
 
 	async send(topic, message) {
 		try {
-			await this.producer.send({
-				topic,
-				messages: [message],
-			});
-			this.logger.info(`Message sent to topic ${topic}`, message);
+			await withTimeout(
+				this.producer.send({
+					topic,
+					messages: [message],
+				}),
+				15000,
+			);
 		} catch (error) {
 			this.logger.error("Failed to send message to Kafka", error);
+			throw error;
 		}
 	}
 
@@ -36,4 +41,6 @@ class KafkaProducer {
 	}
 }
 
-module.exports.KafkaProducer = KafkaProducer;
+module.exports = {
+	KafkaProducer,
+};

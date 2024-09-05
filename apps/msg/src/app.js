@@ -4,6 +4,7 @@ const {
 	setupGracefulShutdown,
 	Logger,
 	ConfigService,
+	MessageSerializerProtobuf,
 } = require("@chatter-box/utils");
 const { MessageService } = require("./message/message.service");
 const { MessageRepository } = require("./message/message.repository");
@@ -37,7 +38,12 @@ const app = async () => {
 		{
 			token: "KafkaTransport",
 			useClass: KafkaTransport,
-			dependencies: ["KafkaProducer", "Logger"],
+			dependencies: [
+				"KafkaProducer",
+				"ConfigService",
+				"MessageSerializerProtobuf",
+				"Logger",
+			],
 		},
 		{
 			token: "KafkaConsumer",
@@ -60,9 +66,13 @@ const app = async () => {
 			dependencies: ["MessageRepository", "KafkaTransport", "Logger"],
 		},
 		{
+			token: "MessageSerializerProtobuf",
+			useClass: MessageSerializerProtobuf,
+		},
+		{
 			token: "MessageHandler",
 			useClass: MessageHandler,
-			dependencies: ["MessageService"],
+			dependencies: ["MessageService", "MessageSerializerProtobuf"],
 		},
 	]);
 

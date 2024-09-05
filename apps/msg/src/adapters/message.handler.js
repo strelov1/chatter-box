@@ -1,11 +1,12 @@
 class MessageHandler {
-	constructor(messageService) {
+	constructor(messageService, serializer) {
 		/** @type {MessageService} */
 		this.messageService = messageService;
+		this.serializer = serializer;
 	}
 
 	async handleMessage(message) {
-		const parsedMessage = JSON.parse(message.value.toString());
+		const parsedMessage = this.serializer.decodeMessage(message.value);
 		await this.messageService.create(parsedMessage.data);
 	}
 }

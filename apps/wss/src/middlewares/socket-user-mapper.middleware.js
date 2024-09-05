@@ -9,6 +9,8 @@ const socketUserMapperMiddleware =
 				`User ${clientSocket.userId} is now associated with Socket ${clientSocket.id}`,
 			);
 			userSocketMapping.add(clientSocket.userId, clientSocket.id);
+
+			logger.info(`Total alive connection is: ${userSocketMapping.count()}`);
 			next();
 		} catch (error) {
 			logger.error(error);

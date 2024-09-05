@@ -1,6 +1,8 @@
 class KafkaTransport {
-	constructor(kafkaProducer, logger) {
+	constructor(kafkaProducer, configService, serializer, logger) {
 		this.kafkaProducer = kafkaProducer;
+		this.topic = configService.get("KAFKA_INCOMING_MESSAGES_TOPIC");
+		this.serializer = serializer;
 		this.logger = logger;
 	}
 
@@ -11,18 +13,15 @@ class KafkaTransport {
 			}
 			const msg = {
 				key: groupId.toString(),
-				value: JSON.stringify({
+				value: this.serializer.encodeMessage({
 					event: eventName,
 					data: message,
 				}),
 			};
-
-			const topic = process.env.KAFKA_INCOMING_MESSAGES_TOPIC;
-			await this.kafkaProducer.send(topic, msg);
+			await this.kafkaProducer.send(this.topic, msg);
 
 			this.logger.info(`Message sent to Kafka successfully: ${eventName}`, {
-				topic,
-				msg,
+				topic: this.topic,
 			});
 		} catch (error) {
 			this.logger.error("Failed to send message to Kafka", error);

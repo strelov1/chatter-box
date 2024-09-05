@@ -4,7 +4,7 @@ class KafkaConsumer {
 		this.topics = topics;
 		this.messageHandler = messageHandler;
 		this.logger = logger;
-		this.consumer = this.kafka.consumer({ groupId: "test-group" });
+		this.consumer = this.kafka.consumer({ groupId: "msg-group" });
 	}
 
 	async connect() {
@@ -17,14 +17,9 @@ class KafkaConsumer {
 			}
 
 			await this.consumer.run({
-				eachMessage: async ({ topic, partition, message }) => {
+				eachMessage: async ({ topic, message }) => {
 					try {
-						this.logger.info(
-							`Consuming message from topic: ${topic}, partition: ${partition}, offset: ${message.offset}`,
-						);
-						this.logger.info(
-							`Message key: ${message.key.toString()}, value: ${message.value.toString()}`,
-						);
+						this.logger.info(`Message key: ${message.key.toString()}`);
 						await this.messageHandler.handleMessage(message);
 						this.logger.info(
 							`Successfully processed message from ${topic} - offset: ${message.offset}`,

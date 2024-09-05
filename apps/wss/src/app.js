@@ -8,6 +8,7 @@ const {
 	setupGracefulShutdown,
 	Logger,
 	ConfigService,
+	MessageSerializerProtobuf,
 } = require("@chatter-box/utils");
 const { SocketIoTransport } = require("./adapters/socket-io.transport");
 const { UserSocketMapping } = require("./adapters/user-socket.mapping");
@@ -58,9 +59,18 @@ const app = async () => {
 			dependencies: ["Kafka", "Logger"],
 		},
 		{
+			token: "MessageSerializerProtobuf",
+			useClass: MessageSerializerProtobuf,
+		},
+		{
 			token: "KafkaTransport",
 			useClass: KafkaTransport,
-			dependencies: ["KafkaProducer", "Logger"],
+			dependencies: [
+				"KafkaProducer",
+				"ConfigService",
+				"MessageSerializerProtobuf",
+				"Logger",
+			],
 		},
 		{
 			token: "KafkaConsumer",
@@ -119,7 +129,7 @@ const app = async () => {
 		{
 			token: "MessageHandler",
 			useClass: MessageHandler,
-			dependencies: ["MessageOutService"],
+			dependencies: ["MessageOutService", "MessageSerializerProtobuf"],
 		},
 	]);
 

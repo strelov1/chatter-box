@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message Message {
+  string event = 1;
+  DataMessage data = 2;
+}
+
+message DataMessage {
+  string groupId = 1;
+  string text = 2;
+}

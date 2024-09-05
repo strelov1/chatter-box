@@ -1,12 +1,12 @@
 config:
   target: "http://localhost:80"
   phases:
-    - duration: 1
-      arrivalRate: 1
+    - duration: 5
+      arrivalRate: 5
       name: "Warm up"
     - duration: 60
-      arrivalRate: 20
-      name: "Sustained load"
+      arrivalRate: 30
+      name: "Sustained load step"
   socketio:
     transports: ['websocket']
   plugins:

@@ -27,6 +27,10 @@ class UserSocketMapping {
 		this.userToSocket.delete(userId);
 		this.socketToUser.delete(socketId);
 	}
+
+	count() {
+		return this.socketToUser.size;
+	}
 }
 
 module.exports.UserSocketMapping = UserSocketMapping;

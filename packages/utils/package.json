@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "dependencies": {},
+  "dependencies": {
+    "abort-controller": "^3.0.0",
+    "protobufjs": "^7.4.0"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"
